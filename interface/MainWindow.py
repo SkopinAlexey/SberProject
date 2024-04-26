@@ -6,8 +6,12 @@ from interface.Developer import Developer
 from typing import List
 from interface.DeveloperWidget import DeveloperWidget
 from web_parser.utils import driver_config
-from web_parser.web_parser import WebParser
+from web_parser.web_parser import web_parser
 from compare.compare import start_compare
+
+from interface.Building import Building
+from interface.BuildingWidgetItem import BuildingWidgetItem
+from interface.BuildingWidget import BuildingWidget
 
 from PySide6 import QtWidgets
 from PySide6.QtCore import QRect
@@ -21,24 +25,28 @@ class MainWindow(QMainWindow):
     chosen_file = ""
 
     def __init__(self):
-
         super().__init__()
 
-        self.webparser = WebParser(driver_config())
         # self.webparser.get_developer_objects(375)
         # self.webparser.get_object_declarations(45247)
 
         self.setWindowTitle("My App")
-        self.setFixedSize(1024, 768)
+        self.setFixedSize(1280, 1024)
 
-        self.label = QLabel(self)
-        self.label.setText("Список файлов в архиве:")
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(90, 75, 400, 51))
+        self.developers_label = QLabel(self)
+        self.developers_label.setText("Список застройщиков:")
+        self.developers_label.setObjectName(u"label")
+        self.developers_label.setGeometry(QRect(90, 75, 400, 51))
         font = QFont()
         font.setFamilies([u"Comic Sans MS"])
         font.setPointSize(22)
-        self.label.setFont(font)
+        self.developers_label.setFont(font)
+
+        self.objects_label = QLabel(self)
+        self.objects_label.setText("Список застройщиков:")
+        self.objects_label.setObjectName(u"label")
+        self.objects_label.setGeometry(QRect(90, 75, 400, 51))
+        self.objects_label.setFont(font)
 
         button_open = QAction("&Открыть", self)
         button_open.setStatusTip("Открыть архив с PDF-документами")
@@ -87,48 +95,54 @@ class MainWindow(QMainWindow):
         self.list_developer.setFont(font_list)
 
         self.list_object = QListWidget(self)
-        self.list_object.setGeometry(QRect(540, 140, 320, 301))
+        self.list_object.setGeometry(QRect(20, 140, 500, 301))
         self.list_object.setStyleSheet("QLineEdit { background-color: white }")
         self.list_object.setFont(font_list)
+        self.list_object.setVisible(False)
 
-        # self.list_pdf = QListWidget(self)
-        # self.list_pdf.setGeometry(QRect(700, 140, 320, 301))
-        # self.list_pdf.setStyleSheet("QLineEdit { background-color: white }")
-        # self.list_pdf.setFont(font_list)
-
-        self.make_default_list()
+        self.list_pdf = QListWidget(self)
+        self.list_pdf.setGeometry(QRect(20, 140, 500, 301))
+        self.list_pdf.setStyleSheet("QLineEdit { background-color: white }")
+        self.list_pdf.setFont(font_list)
+        self.list_pdf.setVisible(False)
 
         self.progressBar = QProgressBar(self)
         self.progressBar.setGeometry(QRect(90, 140, 441, 20))
         self.progressBar.setVisible(False)
 
-        self.list_all = self.webparser.get_developers_list()
-
-        #self.list_developer_class: List[Developer] = []
+        #self.webparser = WebParser(driver_config())
+        self.list_all = web_parser.get_developers_list()
 
         for item in self.list_all:
             dev = Developer(id=item['id'], devInn=item['devInn'], name=item['name'])
-            #self.list_developer_class.append(dev)
-
-            #item = QListWidgetItem(self.list_developer)
             item_widget = DeveloperWidget(developer=dev)
-            #item_widget.setSizeHint(item_widget.sizeHint())
             self.list_developer.addItem(item_widget)
-            #self.list_developer.setItemWidget(item, item_widget)
-
-            # dw = DeveloperWidget(developer=dev)
-            # self.list_developer.addItem(dw)
 
         print(self.list_developer)
-
         self.list_developer.itemClicked.connect(self.on_clicked_developer_list_item)
 
 
     def on_clicked_developer_list_item(self, item):
+        self.list_developer.setVisible(False)
+        self.list_object.setVisible(True)
+        self.list_pdf.setVisible(False)
+        self.list_object.clear()
         id = item.id
-        print(id)
-        list_obj = self.webparser.get_developer_objects(id)
-        print(list_obj)
+        list_obj = web_parser.get_developer_objects(id)
+
+        for item in list_obj:
+            obj = self.getBuilding(item)
+            item_obj = BuildingWidgetItem(self.list_object)
+            item_widget = BuildingWidget(build=obj)
+            self.list_object.addItem(item_obj)
+            self.list_object.setItemWidget(item_obj, item_widget)
+            print(obj)
+
+    def getBuilding(self, item):
+        try:
+            return Building(objId=item['objId'], shortAddr=item['shortAddr'], objCommercNm=item['objCommercNm'])
+        except KeyError:
+            return Building(objId=item['objId'], shortAddr=item['shortAddr'], objCommercNm='noname')
 
     def make_default_list(self):
         self.list_developer.clear()
