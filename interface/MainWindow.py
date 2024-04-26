@@ -183,19 +183,26 @@ class MainWindow(QMainWindow):
         self.delete_extracted_files()
 
     def extractZip(self, path):
-        with zipfile.ZipFile(path, 'r') as zip_ref:
-            zip_ref.extractall('ext_archive')
+        while True:
+            try:
+                with zipfile.ZipFile(path, 'r') as zip_ref:
+                    zip_ref.extractall('ext_archive')
 
-        directory = "ext_archive"
-        files = os.listdir(directory)
-        print(files)
+                directory = "ext_archive"
+                files = os.listdir(directory)
+                print(files)
+                for file in files:
+                    os.rename(os.path.join(directory, file), os.path.join(directory, f"{file}.pdf"))
+                files = os.listdir(directory)
+                self.list_pdf.clear()
+                for i in files:
+                    listWidgetItem = QListWidgetItem(i)
+                    self.list_pdf.addItem(listWidgetItem)
 
-        self.list_pdf.clear()
-        for i in files:
-            listWidgetItem = QListWidgetItem(i)
-            self.list_pdf.addItem(listWidgetItem)
-
-        self.list_pdf.itemClicked.connect(self.on_clicked_list_item)
+                self.list_pdf.itemClicked.connect(self.on_clicked_list_item)
+                break
+            except PermissionError:
+                pass
 
 
     def on_button_open_clicked(self, s):
