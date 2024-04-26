@@ -25,7 +25,7 @@ class WebParser:
             soup = BeautifulSoup(self._driver.page_source, 'lxml')
             find_all_id = soup.find("pre")
             parsed_json = json.loads(str(find_all_id.text))
-            #print(parsed_json['data']['list'])
+            # print(parsed_json['data']['list'])
             # self._driver.close()
             # self._driver.quit()
         except Exception as ex:
@@ -56,7 +56,7 @@ class WebParser:
             self._driver.get("https://xn--80az8a.xn--d1aqf.xn--p1ai/%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B/api"
                              f"/object/{object_id}/documentation/download?tab=projectDeclarations")
             download_wait()
-            rename_file()
+            #rename_file()
 
         except Exception as ex:
             print(f'Ошибка: {ex}')

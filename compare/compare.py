@@ -3,6 +3,8 @@ import re
 import pandas as pd
 from typing import List, Dict
 
+from PySide6 import QtGui
+
 
 def get_text_from_file(filename):
     pdf_file = fitz.open(filename)

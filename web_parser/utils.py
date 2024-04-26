@@ -15,6 +15,7 @@ def driver_config() -> webdriver:
     options.add_argument("--disable-blink-features=AutomationControlled")
     chromedriver_autoinstaller.install()
     dir_path = os.path.abspath(os.getcwd())
+    print(dir_path)
     prefs = {"download.default_directory": dir_path, }
     options.add_experimental_option('prefs', prefs)
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -54,7 +55,7 @@ def download_wait(nfiles=None):
             dl_wait = True
 
         for fname in files:
-            if fname.endswith('.zip'):
+            if fname.endswith('.crdownload'):
                 dl_wait = True
 
         seconds += 1
@@ -62,9 +63,10 @@ def download_wait(nfiles=None):
 
 
 def rename_file():
-    files = os.listdir(os.path.abspath(os.getcwd()))
+    files = os.listdir(os.path.abspath(os.getcwd()) + '\ext_archive')
     for file in files:
         if ".crdownload" in file:
             new_file = re.sub(r'\.crdownload$', '', file)
             os.rename(file, new_file)
+            #os.rename(file, 'down.zip')
 

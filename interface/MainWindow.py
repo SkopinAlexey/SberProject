@@ -1,3 +1,4 @@
+import time
 import zipfile
 import webbrowser
 import os
@@ -5,7 +6,7 @@ import os
 from interface.Developer import Developer
 from typing import List
 from interface.DeveloperWidget import DeveloperWidget
-from web_parser.utils import driver_config
+from web_parser.utils import driver_config, rename_file
 from web_parser.web_parser import web_parser
 from compare.compare import start_compare
 
@@ -89,19 +90,25 @@ class MainWindow(QMainWindow):
         self.buttonClose.setText("Убрать")
         self.buttonClose.clicked.connect(self.on_button_close_clicked)
 
+        self.buttonBack = QPushButton(self)
+        self.buttonBack.setGeometry(QRect(310, 470, 100, 40))
+        self.buttonBack.setFont(font_list)
+        self.buttonBack.setText("Назад")
+        self.buttonBack.clicked.connect(self.on_button_back_clicked)
+
         self.list_developer = QListWidget(self)
-        self.list_developer.setGeometry(QRect(20, 140, 500, 301))
+        self.list_developer.setGeometry(QRect(40, 140, 500, 301))
         self.list_developer.setStyleSheet("QLineEdit { background-color: white }")
         self.list_developer.setFont(font_list)
 
         self.list_object = QListWidget(self)
-        self.list_object.setGeometry(QRect(20, 140, 500, 301))
+        self.list_object.setGeometry(QRect(40, 140, 500, 301))
         self.list_object.setStyleSheet("QLineEdit { background-color: white }")
         self.list_object.setFont(font_list)
         self.list_object.setVisible(False)
 
         self.list_pdf = QListWidget(self)
-        self.list_pdf.setGeometry(QRect(20, 140, 500, 301))
+        self.list_pdf.setGeometry(QRect(40, 140, 500, 301))
         self.list_pdf.setStyleSheet("QLineEdit { background-color: white }")
         self.list_pdf.setFont(font_list)
         self.list_pdf.setVisible(False)
@@ -110,7 +117,6 @@ class MainWindow(QMainWindow):
         self.progressBar.setGeometry(QRect(90, 140, 441, 20))
         self.progressBar.setVisible(False)
 
-        #self.webparser = WebParser(driver_config())
         self.list_all = web_parser.get_developers_list()
 
         for item in self.list_all:
@@ -132,11 +138,30 @@ class MainWindow(QMainWindow):
 
         for item in list_obj:
             obj = self.getBuilding(item)
-            item_obj = BuildingWidgetItem(self.list_object)
-            item_widget = BuildingWidget(build=obj)
+            item_obj = BuildingWidgetItem(obj)
             self.list_object.addItem(item_obj)
-            self.list_object.setItemWidget(item_obj, item_widget)
-            print(obj)
+            # item_obj = BuildingWidgetItem(self.list_object)
+            # item_widget = BuildingWidget(build=obj)
+            # self.list_object.addItem(item_obj)
+            # self.list_object.setItemWidget(item_obj, item_widget)
+
+        self.list_object.itemClicked.connect(self.on_clicked_building_list_item)
+
+    def on_clicked_building_list_item(self, item):
+        web_parser.get_object_declarations(item.buyld.objId)
+        file = os.path.abspath(os.getcwd())
+        print(os.listdir(file))
+        self.delete_extracted_files()
+        while True:
+            try:
+                self.extractZip(f'{file}\obj{item.buyld.objId}_docs.zip')
+                os.remove(f'{file}\obj{item.buyld.objId}_docs.zip')
+                break
+            except FileNotFoundError:
+                pass
+        self.list_developer.setVisible(False)
+        self.list_object.setVisible(False)
+        self.list_pdf.setVisible(True)
 
     def getBuilding(self, item):
         try:
@@ -156,6 +181,22 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.delete_extracted_files()
+
+    def extractZip(self, path):
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            zip_ref.extractall('ext_archive')
+
+        directory = "ext_archive"
+        files = os.listdir(directory)
+        print(files)
+
+        self.list_pdf.clear()
+        for i in files:
+            listWidgetItem = QListWidgetItem(i)
+            self.list_pdf.addItem(listWidgetItem)
+
+        self.list_pdf.itemClicked.connect(self.on_clicked_list_item)
+
 
     def on_button_open_clicked(self, s):
         try:
@@ -209,4 +250,19 @@ class MainWindow(QMainWindow):
             pdfs[i] = 'ext_archive/' + file
             i += 1
         df = start_compare(pdfs)
+        chosen_file, _ = QtWidgets.QFileDialog.getSaveFileName()
+        print(f"{chosen_file}.xlsx")
+        df.to_excel(f"{chosen_file}.xlsx")
         print(df)
+
+    def on_button_back_clicked(self):
+        if self.list_developer.isVisible():
+            pass
+        if self.list_object.isVisible():
+            self.list_developer.setVisible(True)
+            self.list_object.setVisible(False)
+            self.list_pdf.setVisible(False)
+        if self.list_pdf.isVisible():
+            self.list_developer.setVisible(False)
+            self.list_object.setVisible(True)
+            self.list_pdf.setVisible(False)
