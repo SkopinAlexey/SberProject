@@ -25,13 +25,15 @@ class WebParser:
             soup = BeautifulSoup(self._driver.page_source, 'lxml')
             find_all_id = soup.find("pre")
             parsed_json = json.loads(str(find_all_id.text))
-            print(parsed_json['data']['list'][1])
+            print(parsed_json['data']['list'])
             self._driver.close()
             self._driver.quit()
         except Exception as ex:
             print(f'Ошибка: {ex}')
             self._driver.close()
             self._driver.quit()
+
+        return parsed_json['data']['list']
 
     def get_developer_objects(self, developer_id):
         try:
@@ -47,6 +49,7 @@ class WebParser:
             print(f'Ошибка: {ex}')
             self._driver.close()
             self._driver.quit()
+        return parsed_json['data']['list']
 
     def get_object_declarations(self, object_id):
         try:

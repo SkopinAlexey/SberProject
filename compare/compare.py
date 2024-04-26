@@ -75,4 +75,5 @@ def start_compare(pdfs):
         texts.append(make_dict(text))
     res = compare_pdfs(texts)
     data_frame = pd.DataFrame.from_dict(res, orient='index')
-    data_frame.to_excel(f"result.xlsx")
+    #data_frame.to_excel(f"result.xlsx")
+    return data_frame
