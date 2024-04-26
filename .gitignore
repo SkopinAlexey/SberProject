@@ -1,0 +1,4 @@
+*.zip
+/venv
+*.zip.crdownload
+/.idea
