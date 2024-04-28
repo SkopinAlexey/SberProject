@@ -28,30 +28,55 @@ def add_col(texts: List[Dict], index) -> List[str]:
     return res
 
 
+def add_key(key, content, dict):
+    if key != "0":
+        if key in dict.keys():
+            i = 2
+            while f"{key}({i})" in dict.keys():
+                i += 1
+            key = f"{key}({i})"
+        dict[key] = content
+
+
 def make_dict(text) -> Dict:
     pattern4 = re.compile(r"^(?!.*\b\d{1,2}\.\d{1,2}\.\d{4}\b)\d+\.\d+\.\d+(\.\d+(\.\d+(\.\d+)?)?)?$")
+    pattern_paragraph = re.compile(r"\d+\.\d+\s")
+    pattern_chapter = re.compile(r"\d{2}\s")
     dict = {}
-
     current_key = "0"
     content = ""
+    last_paragraph = False
 
     for element in text:
         if pattern4.search(element):
-            prev_key = current_key
-            current_key = element
-            i = 1
-            while prev_key in dict.keys():
-                i += 1
-                prev_key = f"{prev_key}({i})"
-            dict[prev_key] = content
-            content = ""
+            if not last_paragraph:
+                prev_key = current_key
+                current_key = element
+                if prev_key != "0":
+                    add_key(prev_key, content, dict)
+                    content = ""
+            last_paragraph = False
+        elif pattern_paragraph.search(element) or pattern_chapter.search(element):
+            if not last_paragraph and current_key != "0":
+                prev_key = current_key
+                add_key(prev_key, content, dict)
+                content = ""
+                current_key = "0"
+            last_paragraph = True
         else:
+            if current_key == "0":
+                continue
             content += element
     i = 0
     while current_key in dict.keys():
         i += 1
         current_key = f"{current_key}({i})"
     dict[current_key] = content
+    # for i in range(10):
+    #     print()
+    # for key, value in dict.items():
+    #     print(key, value, "\n")
+    # print("\n".join(dict.values()))
     return dict
 
 
