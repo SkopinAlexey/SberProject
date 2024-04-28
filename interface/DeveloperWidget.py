@@ -30,4 +30,3 @@ class DeveloperWidget(QListWidgetItem):
 
         self.setText(self.devInn + '\n' + self.name)
         self.setFont(font_list)
-        #self.setLayout(layout)

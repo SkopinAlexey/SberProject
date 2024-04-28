@@ -15,7 +15,6 @@ def driver_config() -> webdriver:
     options.add_argument("--disable-blink-features=AutomationControlled")
     chromedriver_autoinstaller.install()
     dir_path = os.path.abspath(os.getcwd())
-    print(dir_path)
     prefs = {"download.default_directory": dir_path, }
     options.add_experimental_option('prefs', prefs)
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
