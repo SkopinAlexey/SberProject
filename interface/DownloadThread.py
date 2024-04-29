@@ -1,4 +1,4 @@
-from PySide6.QtCore import QThread, Signal, QRunnable, Slot, QObject
+from PySide6.QtCore import  Signal, QRunnable, Slot, QObject
 
 
 class DownloadSignals(QObject):
