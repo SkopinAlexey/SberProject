@@ -35,6 +35,7 @@ class WebParser:
             parsed_json = json.loads(str(find_all_id.text))
         except Exception as ex:
             print(f'Ошибка: {ex}')
+
         return parsed_json['data']['list']
 
     def get_object_declarations(self, object_id):

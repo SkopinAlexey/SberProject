@@ -5,7 +5,8 @@ import os
 
 from interface.Developer import Developer
 from interface.DeveloperWidget import DeveloperWidget
-from web_parser.web_parser import web_parser
+from web_parser.utils import driver_config
+from web_parser.web_parser import WebParser, web_parser
 from compare.compare import start_compare
 
 from interface.DownloadThread import DownloadThread
@@ -29,7 +30,7 @@ class MainWindow(QMainWindow):
 
         self.threadpool = QThreadPool()
 
-        self.setWindowTitle("My App")
+        self.setWindowTitle("Название")
         self.setFixedSize(1280, 1024)
 
         font = QFont()
@@ -71,17 +72,21 @@ class MainWindow(QMainWindow):
         self.buttonBack.setFont(font_list)
         self.buttonBack.setText("Назад")
         self.buttonBack.clicked.connect(self.on_button_back_clicked)
+        self.buttonBack.setVisible(False)
 
         self.list_developer = QListWidget(self)
         self.list_developer.setGeometry(QRect(40, 140, 800, 301))
         self.list_developer.setStyleSheet("QLineEdit { background-color: white }")
         self.list_developer.setFont(font_list)
+        self.list_developer.itemClicked.connect(self.on_clicked_developer_list_item)
+
 
         self.list_object = QListWidget(self)
         self.list_object.setGeometry(QRect(40, 140, 800, 301))
         self.list_object.setStyleSheet("QLineEdit { background-color: white }")
         self.list_object.setFont(font_list)
         self.list_object.setVisible(False)
+        self.list_object.itemClicked.connect(self.on_clicked_building_list_item)
 
         self.list_pdf = QListWidget(self)
         self.list_pdf.setGeometry(QRect(40, 140, 800, 301))
@@ -99,6 +104,7 @@ class MainWindow(QMainWindow):
         thread.signals.result.connect(self.set_developers)
         self.threadpool.start(thread)
 
+
     @Slot(object)
     def set_developers(self, result):
         self.list_all = result
@@ -108,16 +114,13 @@ class MainWindow(QMainWindow):
             item_widget = DeveloperWidget(developer=dev)
             self.list_developer.addItem(item_widget)
 
-        self.list_developer.itemClicked.connect(self.on_clicked_developer_list_item)
+        #self.list_developer.itemClicked.connect(self.on_clicked_developer_list_item)
 
     def on_clicked_developer_list_item(self, item):
-        self.list_developer.setVisible(False)
-        self.list_object.setVisible(True)
-        self.list_pdf.setVisible(False)
-        self.button_compare.setVisible(False)
-        self.developers_label.setText('Список объектов:')
 
+        self.set_objects_screen()
         self.list_object.clear()
+
         id = item.id
 
         thread = DownloadThread(web_parser.get_developer_objects, id)
@@ -127,31 +130,40 @@ class MainWindow(QMainWindow):
     @Slot(object)
     def set_objects(self, list_obj):
 
+        print(list_obj)
+
+        if len(list_obj) == 0:
+            msg = QMessageBox()
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Не обнаружено объектов у застройщика")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+
         for item in list_obj:
             obj = self.getBuilding(item)
             item_obj = BuildingWidgetItem(obj)
             self.list_object.addItem(item_obj)
 
-        self.list_object.itemClicked.connect(self.on_clicked_building_list_item)
-
     def on_clicked_building_list_item(self, item):
+
         web_parser.get_object_declarations(item.buyld.objId)
         file = os.path.abspath(os.getcwd())
         self.delete_extracted_files()
+
         thread = DownloadThread(self.extractZip, f'{file}\obj{item.buyld.objId}_docs.zip')
         thread.signals.result.connect(self.set_extract)
         self.threadpool.start(thread)
-        self.list_developer.setVisible(False)
-        self.list_object.setVisible(False)
-        self.list_pdf.setVisible(True)
-        self.button_compare.setVisible(True)
-        self.developers_label.setText('Список pdf-файлов:')
+
+        self.set_pdfs_screen()
 
     def getBuilding(self, item):
         try:
             return Building(objId=item['objId'], shortAddr=item['shortAddr'], objCommercNm=item['objCommercNm'])
         except KeyError:
-            return Building(objId=item['objId'], shortAddr=item['shortAddr'], objCommercNm='noname')
+            try:
+                return Building(objId=item['objId'], shortAddr=item['shortAddr'], objCommercNm='noname')
+            except KeyError:
+                return Building(objId=item['problemId'], shortAddr='Проблемный объект', objCommercNm='noname')
 
     def delete_extracted_files(self):
         directory = "ext_archive"
@@ -162,12 +174,20 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.delete_extracted_files()
-        web_parser.tear_down()
-
 
     @Slot(object)
     def set_extract(self, files):
         self.list_pdf.clear()
+
+        if len(files) == 0:
+            msg = QMessageBox()
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Не обнаружено файлов с декларациями")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+            self.set_objects_screen()
+            return
+
         for i in files:
             listWidgetItem = QListWidgetItem(i)
             self.list_pdf.addItem(listWidgetItem)
@@ -192,6 +212,8 @@ class MainWindow(QMainWindow):
                 pass
             except FileNotFoundError:
                 pass
+            except FileExistsError:
+                pass
 
 
     def on_button_open_clicked(self):
@@ -209,7 +231,8 @@ class MainWindow(QMainWindow):
                 listWidgetItem = QListWidgetItem(i)
                 self.list_developer.addItem(listWidgetItem)
 
-            self.list_developer.itemClicked.connect(self.on_clicked_list_item)
+            #self.list_developer.itemClicked.connect(self.on_clicked_list_item)
+
         except zipfile.BadZipfile:
             msg = QMessageBox()
             msg.setWindowTitle("Ошибка")
@@ -228,6 +251,15 @@ class MainWindow(QMainWindow):
         directory = "ext_archive"
         pdfs = os.listdir(directory)
         i = 0
+
+        if len(pdfs) == 0:
+            msg = QMessageBox()
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Не обнаружено файлов для сравнения")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+            return
+
         for file in pdfs:
             pdfs[i] = 'ext_archive/' + file
             i += 1
@@ -252,21 +284,44 @@ class MainWindow(QMainWindow):
             result.to_excel(f"{chosen_file}")
         except ValueError:
             pass
+        except PermissionError:
+            pass
         self.compare_label.setVisible(False)
 
     def on_button_back_clicked(self):
         if self.list_developer.isVisible():
             pass
         elif self.list_object.isVisible():
-            self.list_developer.setVisible(True)
-            self.list_object.setVisible(False)
-            self.list_pdf.setVisible(False)
-            self.button_compare.setVisible(False)
-            self.developers_label.setText('Список застройщиков:')
+            self.list_object.clear()
+            self.set_developer_screen()
         elif self.list_pdf.isVisible():
-            self.list_developer.setVisible(False)
-            self.list_object.setVisible(True)
-            self.list_pdf.setVisible(False)
-            self.button_compare.setVisible(False)
-            self.developers_label.setText('Список объектов:')
-            self.delete_extracted_files()
+            self.list_pdf.clear()
+            self.set_objects_screen()
+
+    def set_developer_screen(self):
+        self.list_developer.setVisible(True)
+        self.list_object.setVisible(False)
+        self.list_pdf.setVisible(False)
+        self.button_compare.setVisible(False)
+        self.buttonBack.setVisible(False)
+        self.developers_label.setText('Список застройщиков:')
+
+    def set_objects_screen(self):
+        self.list_developer.setVisible(False)
+        self.list_object.setVisible(True)
+        self.list_pdf.setVisible(False)
+        self.button_compare.setVisible(False)
+        self.buttonBack.setVisible(True)
+        self.developers_label.setText('Список объектов:')
+        self.delete_extracted_files()
+
+    def set_pdfs_screen(self):
+        self.list_developer.setVisible(False)
+        self.list_object.setVisible(False)
+        self.list_pdf.setVisible(True)
+        self.button_compare.setVisible(True)
+        self.buttonBack.setVisible(True)
+        self.developers_label.setText('Список pdf-файлов:')
+
+    def set_comparing_screen(self):
+        pass
