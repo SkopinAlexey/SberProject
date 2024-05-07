@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
         self.developers_label.setFont(font)
 
         self.compare_label = QLabel(self)
-        self.compare_label.setText("♿Сравниваем...♿")
+        self.compare_label.setText("⌛️Сравниваем...⌛️")
         self.compare_label.setGeometry(QRect(90, 520, 400, 40))
         self.compare_label.setFont(font)
         self.compare_label.setVisible(False)
@@ -162,6 +162,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.delete_extracted_files()
+        web_parser.tear_down()
+
 
     @Slot(object)
     def set_extract(self, files):
@@ -247,7 +249,7 @@ class MainWindow(QMainWindow):
     def save_result(self, result):
         try:
             chosen_file, _ = QtWidgets.QFileDialog.getSaveFileName(self,'Сохранить файл', 'result', 'xlsx files (*.xlsx);;All files*')
-            result.to_excel(f"{chosen_file}.xlsx")
+            result.to_excel(f"{chosen_file}")
         except ValueError:
             pass
         self.compare_label.setVisible(False)
