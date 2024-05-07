@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
             listWidgetItem = QListWidgetItem(i)
             self.list_pdf.addItem(listWidgetItem)
 
-        self.list_pdf.itemClicked.connect(self.on_clicked_list_item)
+        #self.list_pdf.itemClicked.connect(self.on_clicked_list_item)
 
 
     def extractZip(self, path):
