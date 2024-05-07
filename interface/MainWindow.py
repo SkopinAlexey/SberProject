@@ -269,3 +269,4 @@ class MainWindow(QMainWindow):
             self.list_pdf.setVisible(False)
             self.button_compare.setVisible(False)
             self.developers_label.setText('Список объектов:')
+            self.delete_extracted_files()
